@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "নিম্নের কোনটি ইলেকট্রনিক্সের জন্য সঠিক?",
+          options: {
+            a: "IC-র স্বল্প দাম",
+            b: "FET-এর ক্ষমতা লাভ নিম্ন",
+            c: "ইনটিগ্রেটেড সার্কিটের (IC) অতি উচ্চ তাপমাত্রায় কাজ করতে পারে না",
+            d: "ফিল্ড ইফেক্ট ট্রানজিস্টর (FET) হল দুই প্রান্ত বিশিষ্ট",
+          },
+          correct: "a",
+          explanation:
+            "<p>ইন্টিগ্রেটেড সার্কিট (IC) বা সমন্বিত বর্তনীর অন্যতম প্রধান সুবিধা হলো এর উৎপাদন খরচ তুলনামূলকভাবে কম। এটি ছোট আকারের মধ্যে অনেকগুলো ইলেকট্রনিক উপাদান একত্রিত করে তৈরি করা হয়, যা উৎপাদন প্রক্রিয়াকে সাশ্রয়ী করে তোলে।</p>",
+        },
+        {
+          id: 2,
+          question: "ডেসিমেল সংখ্যা পদ্ধতিতে ডিজিট কয়টি?",
+          options: {
+            a: "2",
+            b: "8",
+            c: "10",
+            d: "16",
+          },
+          correct: "c",
+          explanation:
+            "<p>ডেসিমেল বা দশমিক সংখ্যা পদ্ধতিতে মোট ১০টি মৌলিক ডিজিট বা অঙ্ক (০, ১, ২, ৩, ৪, ৫, ৬, ৭, ৮, ৯) ব্যবহার করা হয়।</p>",
+        },
+        {
+          id: 3,
+          question: "0.3789 সংখ্যাটির সব থেকে কম তাৎপর্যপূর্ণ সংখ্যা হলো—",
+          options: {
+            a: "3",
+            b: "7",
+            c: "8",
+            d: "9",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি দশমিক সংখ্যায় সবচেয়ে ডানদিকের অঙ্কটি হলো সবচেয়ে কম তাৎপর্যপূর্ণ (Least Significant Digit)। ০.৩৭৮৯ সংখ্যাটিতে, ৯ হলো সবচেয়ে ডানদিকের অঙ্ক, তাই এটি সবচেয়ে কম তাৎপর্যপূর্ণ।</p>",
+        },
+        {
+          id: 4,
+          question: "4 বিট নাম্বারে সর্বোচ্চ সংখ্যা কতটি?",
+          options: {
+            a: "16",
+            b: "15",
+            c: "12",
+            d: "9",
+          },
+          correct: "b",
+          explanation:
+            "<p>4 বিটের বাইনারি সংখ্যা দিয়ে 0 থেকে 15 পর্যন্ত মোট 16টি ভিন্ন সংখ্যা প্রকাশ করা যায়। এর মধ্যে সর্বোচ্চ সংখ্যাটি হলো 1111, যার দশমিক মান 15।</p>",
+        },
+        {
+          id: 5,
+          question: "হেক্সাডেসিমেল 'C' এর বাইনারি হলো—",
+          options: {
+            a: "1001",
+            b: "1100",
+            c: "1010",
+            d: "1110",
+          },
+          correct: "b",
+          explanation:
+            "<p>হেক্সাডেসিমেল 'C' এর দশমিক মান হলো 12। 12-এর 4-বিটের বাইনারি রূপ হলো 1100। (8 + 4 + 0 + 0 = 12)</p>",
+        },
+        {
+          id: 6,
+          question:
+            "দশমিক সংখ্যা 15 এর সমতুল্য অক্টাল ও হেক্সাডেসিমেল সংখ্যা কোনটি?",
+          options: {
+            a: "17 এবং F",
+            b: "16 এবং F",
+            c: "16 এবং D",
+            d: "15 এবং C",
+          },
+          correct: "a",
+          explanation:
+            "<p><b>অক্টাল:</b> 15 ÷ 8 = 1 ভাগশেষ 7। সুতরাং, (15)₁₀ = (17)₈।<br><b>হেক্সাডেসিমেল:</b> 15 এর হেক্সাডেসিমেল মান হলো F।<br>অতএব, সমতুল্য সংখ্যা দুটি হলো 17 এবং F।</p>",
+        },
+        {
+          id: 7,
+          question: "(99)₁₆ এর পরের সংখ্যাটি কত?",
+          options: {
+            a: "(9A)₁₆",
+            b: "(A9)₁₆",
+            c: "(AA)₁₆",
+            d: "(FF)₁₆",
+          },
+          correct: "a",
+          explanation:
+            "<p>হেক্সাডেসিমেল সংখ্যা পদ্ধতিতে 9 এর পরের অঙ্কটি হলো A। তাই, (99)₁₆ এর সাথে 1 যোগ করলে (9A)₁₆ হয়।</p>",
+        },
+        {
+          id: 8,
+          question: "হেক্সাডেসিমেল সংখ্যা পদ্ধতির ভিত্তি কোনটি?",
+          options: {
+            a: "16",
+            b: "10",
+            c: "8",
+            d: "2",
+          },
+          correct: "a",
+          explanation:
+            "<p>হেক্সাডেসিমেল সংখ্যা পদ্ধতির ভিত্তি বা বেস হলো 16। এই পদ্ধতিতে 0-9 এবং A-F এই 16টি প্রতীক ব্যবহার করা হয়।</p>",
+        },
+        {
+          id: 9,
+          question: "বুলিয়ান বীজগণিত অনুযায়ী 0̅-এর মান কত?",
+          options: {
+            a: "0",
+            b: "1",
+            c: "1",
+            d: "-1",
+          },
+          correct: "b",
+          explanation:
+            "<p>বুলিয়ান বীজগণিতে পূরক বা NOT অপারেশন অনুযায়ী, ০ এর পূরক (0̅) হলো ১ এবং ১ এর পূরক (1̅) হলো ০। সুতরাং, 0̅ = 1।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "বুলিয়ান ফাংশন F = (A + B) (A + B̅) হলে, F-এর সরলীকৃত মান কোনটি?",
+          options: {
+            a: "A",
+            b: "B",
+            c: "A + B",
+            d: "A · B",
+          },
+          correct: "a",
+          explanation:
+            "বুলিয়ান অ্যালজেব্রার সূত্র ব্যবহার করে:<br>F = (A + B) (A + B̅) = A·A + A·B̅ + B·A + B·B̅<br>= A + AB̅ + AB + 0<br>= A(1 + B̅ + B)<br>= A(1 + 1)<br>= A·1 = A.<br>সুতরাং, সরলীকৃত মান হলো A।",
+        },
+        {
+          id: 11,
+          question: "বাইনারি পদ্ধতিতে লজিক অবস্থা কয়টি?",
+          options: {
+            a: "একটি",
+            b: "দুটি",
+            c: "তিনটি",
+            d: "চারটি",
+          },
+          correct: "b",
+          explanation:
+            "<p>বাইনারি পদ্ধতিতে শুধুমাত্র দুটি লজিক অবস্থা বা ডিজিট থাকে: ০ (মিথ্যা বা বন্ধ) এবং ১ (সত্য বা চালু)।</p>",
+        },
+        {
+          id: 12,
+          question: "কোন গেটের ইনপুট 1 হলে আউটপুট 0 হয়?",
+          options: {
+            a: "X NOR gate",
+            b: "NOT gate",
+            c: "XOR gate",
+            d: "OR gate",
+          },
+          correct: "b",
+          explanation:
+            "<p>NOT গেট (ইনভার্টার) এর একটি মাত্র ইনপুট থাকে। ইনপুটে 1 দিলে আউটপুটে 0 পাওয়া যায় এবং ইনপুটে 0 দিলে আউটপুটে 1 পাওয়া যায়।</p>",
+        },
+        {
+          id: 13,
+          question: "নিচের কোন গেটটি AND এবং NOT গেটের সমন্বয়ে তৈরি?",
+          options: {
+            a: "NAND",
+            b: "XOR",
+            c: "NOR",
+            d: "OR",
+          },
+          correct: "a",
+          explanation:
+            "<p>NAND গেট হলো AND গেট এবং NOT গেটের সমন্বয়ে গঠিত (AND + NOT = NAND)। এর আউটপুট AND গেটের আউটপুটের ঠিক বিপরীত হয়।</p>",
+        },
+        {
+          id: 14,
+          question: "কোন গেটের সকল ইনপুট 1 হলে আউটপুট 1 হয়?",
+          options: {
+            a: "NOR",
+            b: "AND",
+            c: "XOR",
+            d: "OR",
+          },
+          correct: "b",
+          explanation:
+            "<p>AND গেটের ক্ষেত্রে, এর আউটপুট তখনই 1 হয় যখন এর সকল ইনপুট 1 হয়। যদি কোনো একটি ইনপুটও 0 হয়, তবে আউটপুট 0 হবে।</p>",
+        },
+        {
+          id: 15,
+          question: "AND গেট ব্যবহৃত হয়—",
+          options: {
+            a: "যৌক্তিক যোগের জন্য",
+            b: "যৌক্তিক গুণের জন্য",
+            c: "যৌক্তিক পূরকের জন্য",
+            d: "যৌক্তিক ভাগের জন্য",
+          },
+          correct: "b",
+          explanation:
+            "<p>AND গেট লজিক্যাল বা যৌক্তিক গুণের কাজ করে। এর আউটপুট (Y = A.B) তখনই 1 হয় যখন সকল ইনপুট 1 হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "কোনটি মৌলিক গেট নয়?",
+          options: {
+            a: "OR",
+            b: "NOT",
+            c: "NAND",
+            d: "AND",
+          },
+          correct: "c",
+          explanation:
+            "<p>মৌলিক লজিক গেট তিনটি: AND, OR, এবং NOT। NAND গেট হলো একটি যৌগিক বা সার্বজনীন গেট।</p>",
+        },
+        {
+          id: 17,
+          question: "কোন গেটটি OR এবং NOT গেট দিয়ে তৈরি?",
+          options: {
+            a: "NAND",
+            b: "NOR",
+            c: "XOR",
+            d: "OR",
+          },
+          correct: "b",
+          explanation:
+            "<p>NOR গেট হলো OR গেট এবং NOT গেটের সমন্বয়ে গঠিত (OR + NOT = NOR)। এর আউটপুট OR গেটের আউটপুটের ঠিক বিপরীত হয়।</p>",
+        },
+        {
+          id: 18,
+          question: "কোন লজিক গেট দুটিকে সার্বজনীন গেট বলে?",
+          options: {
+            a: "AND ও OR",
+            b: "OR ও NOT",
+            c: "NOR ও NAND",
+            d: "NAND ও XOR",
+          },
+          correct: "c",
+          explanation:
+            "<p>NAND গেট এবং NOR গেটকে সার্বজনীন গেট বলা হয়, কারণ এই দুটি গেট ব্যবহার করে অন্যান্য সকল মৌলিক ও যৌগিক গেট তৈরি করা সম্ভব।</p>",
+        },
+        {
+          id: 19,
+          question: "কোন লজিক গেটের যে কোনো একটি ইনপুট 1 হলে আউটপুট '0' হবে?",
+          options: {
+            a: "NAND",
+            b: "OR",
+            c: "NOR",
+            d: "কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>NOR গেটের ক্ষেত্রে, যদি এর কোনো একটি ইনপুটও 1 হয়, তবে আউটপুট 0 হবে। শুধুমাত্র যখন এর সকল ইনপুট 0 হয়, তখনই এর আউটপুট 1 হয়।</p>",
+        },
+        {
+          id: 20,
+          question: "Y = A⊕B এই বুলিয়ান অভিব্যক্তিতে A = 1, B = 1 হলে Y = কত?",
+          options: {
+            a: "0",
+            b: "1",
+            c: "11",
+            d: "10",
+          },
+          correct: "a",
+          explanation:
+            "<p>প্রশ্নটি সম্ভবত একটি XOR গেটকে নির্দেশ করছে, যার বুলিয়ান অভিব্যক্তি Y = A⊕B = A̅B + AB̅।<br>যদি A = 1 এবং B = 1 হয়, তাহলে A̅ = 0 এবং B̅ = 0।<br>Y = (0 × 1) + (1 × 0) = 0 + 0 = 0।<br>XOR গেটের ক্ষেত্রে, যখন দুটি ইনপুট একই হয় (0,0 বা 1,1), তখন আউটপুট 0 হয়।</p>",
+        },
+        {
+          id: 21,
+          question: "অক্টাল সংখ্যা পদ্ধতিতে 376 এর পরবর্তী সংখ্যা কোনটি?",
+          options: {
+            a: "377",
+            b: "407",
+            c: "477",
+            d: "478",
+          },
+          correct: "a",
+          explanation:
+            "<p>অক্টাল সংখ্যা পদ্ধতিতে 0 থেকে 7 পর্যন্ত অঙ্ক ব্যবহৃত হয়। (376)₈ এর সাথে 1 যোগ করলে (377)₈ হয়, কারণ 6 এর পরের অঙ্ক 7।</p>",
+        },
+        {
+          id: 22,
+          question: "কোন গেটের সকল ইনপুট 1 হলে আউটপুট 1 হবে না?",
+          options: {
+            a: "AND",
+            b: "OR",
+            c: "XOR",
+            d: "XNOR",
+          },
+          correct: "c",
+          explanation:
+            "<p>XOR গেটের ক্ষেত্রে, যখন দুটি ইনপুট একই হয় (যেমন, A=1, B=1), তখন আউটপুট 0 হয়। AND, OR, এবং XNOR গেটের ক্ষেত্রে দুটি ইনপুট 1 হলে আউটপুট 1 হয়।</p>",
+        },
+        {
+          id: 23,
+          question: "কোন গেটের ইনপুটে বিজোড় সংখ্যক 1 হলে আউটপুট 1 হয়?",
+          options: {
+            a: "X-NOR",
+            b: "NOT",
+            c: "AND",
+            d: "X-OR",
+          },
+          correct: "d",
+          explanation:
+            "<p>XOR (Exclusive-OR) গেটের বৈশিষ্ট্য হলো, এর ইনপুটে বিজোড় সংখ্যক 1 থাকলে আউটপুট 1 হয়। যদি ইনপুটে জোড় সংখ্যক 1 থাকে, তবে আউটপুট 0 হয়।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "একটি XOR গেটে A এবং B এর ইনপুট কত হলে আউটপুটে রাখা LED টি জ্বলে ওঠবে, যদি LED টির ক্যাথোড 0V-এ লাগানো থাকে?",
+          options: {
+            a: "0 এবং 0",
+            b: "1 এবং 1",
+            c: "0 এবং 1",
+            d: "কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>LED জ্বলে ওঠার জন্য এর অ্যানোড প্রান্তে উচ্চ ভোল্টেজ (লজিক 1) প্রয়োজন। XOR গেটের আউটপুট তখনই 1 হয় যখন এর ইনপুটগুলো ভিন্ন হয়। সুতরাং, A=0 এবং B=1 (অথবা A=1, B=0) হলে আউটপুট 1 হবে এবং LED জ্বলে উঠবে।</p>",
+        },
+        {
+          id: 25,
+          question: "একটি সমন্বিত বর্তনীতে নিম্নের কোন উপাংশটি অনুপস্থিত?",
+          options: {
+            a: "ট্রানজিস্টর",
+            b: "ডায়োড",
+            c: "রোধক",
+            d: "আবেশক",
+          },
+          correct: "d",
+          explanation:
+            "<p>সমন্বিত বর্তনীতে (IC) ট্রানজিস্টর, ডায়োড, রোধক এবং ক্যাপাসিটর অন্তর্ভুক্ত করা যায়। তবে, আবেশক (Inductor) এর আকার বড় হওয়ায় এবং চিপের মধ্যে তৈরি করা কঠিন হওয়ায় এটি সাধারণত IC-তে অনুপস্থিত থাকে।</p>",
+        },
+        {
+          id: 26,
+          question: "বাইনারি নম্বর পদ্ধতি হল—",
+          options: {
+            a: "2 ভিত্তিক",
+            b: "4 ভিত্তিক",
+            c: "10 ভিত্তিক",
+            d: "16 ভিত্তিক",
+          },
+          correct: "a",
+          explanation:
+            "<p>বাইনারি নম্বর পদ্ধতির ভিত্তি বা বেস হলো 2। এই পদ্ধতিতে শুধুমাত্র দুটি ডিজিট (0 এবং 1) ব্যবহার করা হয়।</p>",
+        },
+        {
+          id: 27,
+          question: "অক্টাল নম্বর পদ্ধতি হল—",
+          options: {
+            a: "2 ভিত্তিক",
+            b: "4 ভিত্তিক",
+            c: "10 ভিত্তিক",
+            d: "8 ভিত্তিক",
+          },
+          correct: "d",
+          explanation:
+            "<p>অক্টাল নম্বর পদ্ধতির ভিত্তি বা বেস হলো 8। এই পদ্ধতিতে 0 থেকে 7 পর্যন্ত মোট 8টি ডিজিট ব্যবহার করা হয়।</p>",
+        },
+        {
+          id: 28,
+          question: "হেক্সাডেসিমেল পদ্ধতিতে ব্যবহৃত প্রতীক বা চিহ্ন হল—",
+          options: {
+            a: "2 টি",
+            b: "4 টি",
+            c: "10 টি",
+            d: "16 টি",
+          },
+          correct: "d",
+          explanation:
+            "<p>হেক্সাডেসিমেল সংখ্যা পদ্ধতির ভিত্তি হলো 16 এবং এতে মোট 16টি প্রতীক বা চিহ্ন ব্যবহার করা হয় (0-9 এবং A-F)।</p>",
+        },
+        {
+          id: 29,
+          question: "একটি ইনপুট ও একটি আউটপুট থাকে কোন গেটে?",
+          options: {
+            a: "OR",
+            b: "AND",
+            c: "NOT",
+            d: "NOR",
+          },
+          correct: "c",
+          explanation:
+            "<p>NOT গেট হলো একমাত্র মৌলিক লজিক গেট যার একটি মাত্র ইনপুট এবং একটি মাত্র আউটপুট থাকে।</p>",
+        },
+        {
+          id: 30,
+          question: "মৌলিক লজিক গেট কয় ধরনের?",
+          options: {
+            a: "দুই",
+            b: "তিন",
+            c: "চার",
+            d: "পাঁচ",
+          },
+          correct: "b",
+          explanation:
+            "<p>মৌলিক লজিক গেট তিন ধরনের: AND গেট, OR গেট এবং NOT গেট।</p>",
+        },
+        {
+          id: 31,
+          question: "IC-এর ক্ষেত্রে কোনটি সঠিক নয়?",
+          options: {
+            a: "আকার ছোট",
+            b: "ওজন কম",
+            c: "মূল্য কম",
+            d: "সংযোগ সংখ্যা বেশি",
+          },
+          correct: "d",
+          explanation:
+            "<p>IC বা ইন্টিগ্রেটেড সার্কিটের প্রধান বৈশিষ্ট্য হলো ছোট আকার, কম ওজন এবং কম মূল্য। IC-এর সংযোগ সংখ্যা (Pins) সীমিত থাকে এবং এটি এর মূল বৈশিষ্ট্য নয়।</p>",
+        },
+      ];
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                            <div class="circle">${option}</div>
+                                            <span class="option-text">${question.options[option]}</span>
+                                            </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                                     <div class="explanation-content">
+                                                                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                                       ${question.explanation}
+                                                                                                     </div>
+                                                                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                                <p class="question-label">${
+                                                                                                  index +
+                                                                                                  1
+                                                                                                }. ${
+            question.question
+          }</p>
+                                                                                                <div class="options">
+                                                                                                  ${optionsHTML}
+                                                                                                </div>
+                                                                                                ${explanationHTML}
+                                                                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
